@@ -173,6 +173,17 @@
   .ri-by{font-size:12px;color:var(--hint);margin-top:5px}
   .rep-empty{font-size:13px;color:var(--hint);padding:4px 2px 10px}
 
+  #alert-banner{margin:14px 0 0}
+  .alert-head{font-size:14px;font-weight:600;color:var(--copper-dark);margin-bottom:8px}
+  .alert-item{background:#FDF6EC;border:1px solid var(--copper-soft);border-left:3px solid var(--copper);
+    border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:13px;cursor:pointer}
+  .alert-item:hover{background:#fbf0df}
+  .alert-when{display:block;color:var(--hint);font-size:12px;margin-top:3px}
+  .card-alert{margin-top:8px;font-size:13px;color:var(--copper-dark);background:#FDF6EC;
+    border-radius:8px;padding:6px 10px;display:inline-block}
+  .alert-when-inline{color:var(--hint)}
+  .ver{text-align:center;font-size:11px;color:var(--hint);padding:24px 0 4px;letter-spacing:.5px}
+
   /* ---------- MODAL ---------- */
   .overlay{position:fixed;inset:0;background:rgba(26,26,26,.45);display:flex;align-items:flex-start;
     justify-content:center;padding:30px 16px;overflow-y:auto;z-index:50}
@@ -262,6 +273,7 @@
   </div>
 
   <div id="main-view">
+  <div id="alert-banner" class="hidden"></div>
   <div class="toolbar">
     <div class="search-row">
       <div class="search">
@@ -289,6 +301,7 @@
   </div>
 
   <div id="list"></div>
+  <div class="ver" id="ver"></div>
   </div>
 
   <div id="reports-view" class="hidden"></div>
@@ -301,6 +314,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ===================== CONFIG ===================== */
+const APP_VERSION = '0.2';
 const SUPABASE_URL = 'https://ykqyqioyiamljnlbmyez.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_R842aVlOVv69dFzA6X50tQ__vREtPFz';
 let sessionToken = null;
@@ -463,6 +477,7 @@ function enterApp(){
   $('#rep-btn').classList.toggle('hidden', currentUser.pode_ver_relatorio===false);
   $('#users-btn').classList.toggle('hidden', currentUser.papel!=='master');
   $('#who').textContent = currentUser.nome + (currentUser.papel==='master'?' · master':'');
+  $('#ver').textContent = 'Soares Pacheco · v'+APP_VERSION;
   loadProcessos();
 }
 
@@ -484,6 +499,26 @@ async function loadProcessos(){
   if(error){ $('#list').innerHTML='<div class="empty-state">Erro ao carregar: '+error.message+'</div>'; return; }
   processos=(data||[]).filter(p=>p.excluido!==true);
   render();
+  renderAlerts();
+}
+
+function renderAlerts(){
+  const b=$('#alert-banner'); if(!b) return;
+  const today=new Date(); today.setHours(0,0,0,0);
+  const items=processos.filter(p=>{
+    if(!p.data_alerta) return false;
+    const d=new Date(p.data_alerta+'T00:00:00');
+    const diff=Math.round((d-today)/86400000);
+    return diff>=0 && diff<=3;
+  }).sort((a,b)=>(a.data_alerta||'').localeCompare(b.data_alerta||''));
+  if(items.length===0){ b.innerHTML=''; b.classList.add('hidden'); return; }
+  b.classList.remove('hidden');
+  b.innerHTML = `<div class="alert-head">🔔 ${items.length} aviso${items.length>1?'s':''} nos próximos dias</div>` +
+    items.map(p=>{
+      const d=new Date(p.data_alerta+'T00:00:00'); const diff=Math.round((d-today)/86400000);
+      const quando = diff===0?'é hoje':(diff===1?'é amanhã':'em '+diff+' dias');
+      return `<div class="alert-item" onclick="openForm(${p.id})"><b>${esc(p.cliente)}</b> — ${esc(p.alerta||'Alerta')}<span class="alert-when">${fmtDate(p.data_alerta)} · ${quando}</span></div>`;
+    }).join('');
 }
 
 function passesFilters(p){
@@ -493,7 +528,7 @@ function passesFilters(p){
   if(raw){
     const q=norm(raw);
     const qd=onlyDigits(raw);
-    const hay=norm([p.cliente,p.acao,p.andamento,p.providencias,p.grupo,p.numero].join(' '));
+    const hay=norm([p.cliente,p.acao,p.andamento,p.providencias,p.observacao,p.alerta,p.numero].join(' '));
     const textMatch = hay.includes(q);
     const numMatch = qd.length>=2 && onlyDigits(p.numero).includes(qd);
     if(!(textMatch || numMatch)) return false;
@@ -530,18 +565,19 @@ function cardHTML(p){
     (canEdit?`<button class="icon-btn" title="Editar" onclick="openForm(${p.id})"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>`:'') +
     (canDel?`<button class="icon-btn" title="Esconder" onclick="askDelete(${p.id})"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>`:'');
   const ext = p.extrajudicial===true ? '<span class="tag ext">Extrajudicial</span>' : '';
-  const grupo = p.grupo ? `<span class="tag grupo">${esc(p.grupo)}</span>` : '';
   const and = p.andamento ? `<div class="andline"><span class="lbl">Andamento:</span> ${esc(p.andamento)}</div>`
                           : `<div class="andline empty">Sem andamento ainda</div>`;
   const prov = p.providencias ? `<div class="prov"><span class="lbl">Providência:</span> ${esc(p.providencias)}</div>` : '';
+  const obs = p.observacao ? `<div class="prov"><span class="lbl">Obs.:</span> ${esc(p.observacao)}</div>` : '';
+  const alerta = (p.alerta || p.data_alerta) ? `<div class="card-alert">🔔 ${esc(p.alerta||'Alerta')}${p.data_alerta?` <span class="alert-when-inline">· ${fmtDate(p.data_alerta)}</span>`:''}</div>` : '';
   return `<div class="card" onclick="openForm(${p.id})">
     <div class="row1"><span class="cli">${esc(p.cliente)||'(sem nome)'}</span><span class="acts" onclick="event.stopPropagation()">${acts}</span></div>
     <div class="acao">${esc(p.acao)||'—'}</div>
     <div class="meta">
-      <span class="num">${esc(p.numero)||'—'}</span>${sysTag(p.sistema)}${ext}${grupo}
+      <span class="num">${esc(p.numero)||'—'}</span>${sysTag(p.sistema)}${ext}
       <span class="date">${fmtDate(p.data)}</span>
     </div>
-    ${and}${prov}
+    ${and}${prov}${obs}${alerta}
   </div>`;
 }
 
@@ -827,7 +863,14 @@ window.openForm = function(id){
       <div class="field"><label>Data</label><input id="f-data" type="date" value="${p&&p.data?String(p.data).slice(0,10):''}"></div>
       <div class="field"><label>Andamento</label><textarea id="f-and" rows="2">${p?esc(p.andamento):''}</textarea></div>
       <div class="field"><label>Providência</label><textarea id="f-prov" rows="2">${p?esc(p.providencias):''}</textarea></div>
-      <div class="field"><label>Grupo / etiqueta</label><input id="f-grupo" type="text" value="${p?esc(p.grupo):''}" placeholder="Ex.: Buzios"></div>
+      <div class="field"><label>Observação (recado interno)</label><textarea id="f-obs" rows="2" placeholder="Ex.: Maria, conferir documento com o cliente">${p?esc(p.observacao):''}</textarea></div>
+      <div class="field" style="background:#FDF6EC;border:1px solid var(--copper-soft);border-radius:10px;padding:12px;">
+        <label style="color:var(--copper-dark);font-weight:500">🔔 Alerta (prazo / audiência)</label>
+        <input id="f-alerta" type="text" value="${p?esc(p.alerta):''}" placeholder="Ex.: Audiência às 14h, comparecer à empresa X" style="margin-bottom:8px">
+        <label>Data do alerta</label>
+        <input id="f-dataalerta" type="date" value="${p&&p.data_alerta?String(p.data_alerta).slice(0,10):''}">
+        <div style="font-size:11px;color:var(--hint);margin-top:6px">O aviso aparece no app a partir de 3 dias antes, todo dia, até a data.</div>
+      </div>
       <div class="modal-actions">
         <button class="btn-ghost" onclick="closeForm()">Cancelar</button>
         <button class="btn-primary" id="f-save">${p?'Salvar':'Incluir'}</button>
@@ -867,7 +910,9 @@ async function saveForm(id){
     cliente:cli, acao:$('#f-acao').value.trim(), numero,
     sistema:$('#f-sis').value, data:$('#f-data').value||null,
     andamento:$('#f-and').value.trim(), providencias:$('#f-prov').value.trim(),
-    grupo:$('#f-grupo').value.trim()||null, extrajudicial:ext, excluido:false
+    observacao:$('#f-obs').value.trim()||null,
+    alerta:$('#f-alerta').value.trim()||null, data_alerta:$('#f-dataalerta').value||null,
+    extrajudicial:ext, excluido:false
   };
   $('#f-save').disabled=true;
   if(id){
@@ -875,7 +920,7 @@ async function saveForm(id){
     const {error}=await db.from('processos').update(obj).eq('id',id);
     if(error){ toast('Erro: '+error.message); $('#f-save').disabled=false; return; }
     // registra mudanças campo a campo
-    for(const f of ['andamento','providencias','cliente','acao','numero','sistema','data']){
+    for(const f of ['andamento','providencias','observacao','cliente','acao','numero','sistema','data','alerta','data_alerta']){
       const a=(old[f]==null?'':String(old[f])), b=(obj[f]==null?'':String(obj[f]));
       if(a!==b) await logAction('editar', id, f, a, b);
     }
