@@ -317,7 +317,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ===================== CONFIG ===================== */
-const APP_VERSION = '0.3';
+const APP_VERSION = '0.4';
 const SUPABASE_URL = 'https://ykqyqioyiamljnlbmyez.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_R842aVlOVv69dFzA6X50tQ__vREtPFz';
 let sessionToken = null;
@@ -441,7 +441,7 @@ $('#login-btn').addEventListener('click', async ()=>{
     return;
   }
   setClient(data.token);
-  currentUser={ nome:data.nome, papel:data.papel, pode_editar:data.pode_editar, pode_deletar:data.pode_deletar, pode_ver_relatorio:data.pode_ver_relatorio!==false };
+  currentUser={ nome:data.nome, papel:data.papel, pode_editar:data.pode_editar, pode_deletar:data.pode_deletar, pode_incluir:data.pode_incluir!==false, pode_ver_relatorio:data.pode_ver_relatorio!==false };
   await logAction('login', null, '', '', '');
   if(data.trocar_senha){ openPinChange(true); } else { enterApp(); }
 });
@@ -456,7 +456,7 @@ $('#setup-btn').addEventListener('click', async ()=>{
   const {data,error}=await db.rpc('sp_setup_master',{ p_nome:nome, p_pin:p1 });
   if(error){ authMsg('Erro: '+error.message,true); return; }
   setClient(data);
-  currentUser={ nome, papel:'master', pode_editar:true, pode_deletar:true, pode_ver_relatorio:true };
+  currentUser={ nome, papel:'master', pode_editar:true, pode_deletar:true, pode_incluir:true, pode_ver_relatorio:true };
   await logAction('login', null, '', '', '');
   enterApp();
 });
@@ -480,6 +480,7 @@ function enterApp(){
   $('#users-view').classList.add('hidden');
   $('#rep-btn').classList.toggle('hidden', currentUser.pode_ver_relatorio===false);
   $('#users-btn').classList.toggle('hidden', currentUser.papel!=='master');
+  $('#add-btn').classList.toggle('hidden', !(currentUser.pode_incluir||currentUser.papel==='master'));
   $('#who').textContent = currentUser.nome + (currentUser.papel==='master'?' · master':'');
   $('#ver').textContent = 'Soares Pacheco · v'+APP_VERSION;
   loadProcessos();
@@ -582,7 +583,7 @@ function cardHTML(p){
   const prov = p.providencias ? `<div class="prov"><span class="lbl">Providência:</span> ${esc(p.providencias)}</div>` : '';
   const obs = p.observacao ? `<div class="prov"><span class="lbl">Obs.:</span> ${esc(p.observacao)}</div>` : '';
   const alerta = (p.alerta || p.data_alerta) ? `<div class="card-alert">🔔 ${esc(p.alerta||'Alerta')}${p.data_alerta?` <span class="alert-when-inline">· ${fmtDate(p.data_alerta)}</span>`:''}</div>` : '';
-  return `<div class="card" onclick="openForm(${p.id})">
+  return `<div class="card"${canEdit?` onclick="openForm(${p.id})" style="cursor:pointer"`:''}>
     <div class="row1"><span class="cli">${esc(p.cliente)||'(sem nome)'}</span><span class="acts" onclick="event.stopPropagation()">${acts}</span></div>
     <div class="acao">${esc(p.acao)||'—'}</div>
     <div class="meta">
@@ -685,6 +686,7 @@ async function openUsers(){
       <div class="field"><label>Nome</label><input id="nu-nome" type="text" placeholder="Ex.: Maria"></div>
       <div class="field"><label>PIN de 4 dígitos</label><input id="nu-pin" type="password" inputmode="numeric" maxlength="4" placeholder="••••" style="letter-spacing:6px"></div>
       <div class="usr-perms">
+        <label><input type="checkbox" id="nu-inc" checked> Pode incluir</label>
         <label><input type="checkbox" id="nu-edit" checked> Pode editar</label>
         <label><input type="checkbox" id="nu-del"> Pode excluir</label>
         <label><input type="checkbox" id="nu-rel" checked> Pode ver relatório</label>
@@ -719,6 +721,7 @@ function userCard(u){
   return `<div class="usr-card ${u.ativo?'':'usr-inactive'}" id="u-${u.id}">
     <div class="usr-top"><span class="usr-name">${esc(u.nome)}</span><span class="usr-badge">${u.ativo?'ativo':'inativo'}</span></div>
     <div class="usr-perms">
+      <label><input type="checkbox" class="p-inc" ${u.pode_incluir?'checked':''}> Pode incluir</label>
       <label><input type="checkbox" class="p-edit" ${u.pode_editar?'checked':''}> Pode editar</label>
       <label><input type="checkbox" class="p-del" ${u.pode_deletar?'checked':''}> Pode excluir</label>
       <label><input type="checkbox" class="p-rel" ${u.pode_ver_relatorio?'checked':''}> Pode ver relatório</label>
@@ -737,7 +740,7 @@ async function addUser(){
   if(!nome){ toast('Informe o nome.'); return; }
   if(!/^\d{4}$/.test(pin)){ toast('PIN deve ter 4 números.'); return; }
   const {error}=await db.rpc('sp_create_user',{ p_nome:nome, p_pin:pin,
-    p_editar:$('#nu-edit').checked, p_deletar:$('#nu-del').checked, p_relatorio:$('#nu-rel').checked });
+    p_editar:$('#nu-edit').checked, p_deletar:$('#nu-del').checked, p_incluir:$('#nu-inc').checked, p_relatorio:$('#nu-rel').checked });
   if(error){ toast('Erro: '+error.message); return; }
   toast('Usuário criado.');
   $('#nu-nome').value=''; $('#nu-pin').value='';
@@ -748,6 +751,7 @@ async function saveUser(id, root){
   const {error}=await db.rpc('sp_update_user',{ p_id:id,
     p_editar:root.querySelector('.p-edit').checked,
     p_deletar:root.querySelector('.p-del').checked,
+    p_incluir:root.querySelector('.p-inc').checked,
     p_relatorio:root.querySelector('.p-rel').checked,
     p_ativo:root.querySelector('.p-ativo').checked });
   if(error){ toast('Erro: '+error.message); return; }
@@ -847,6 +851,8 @@ async function nextExt(){
 }
 
 window.openForm = function(id){
+  if(id && !(currentUser.pode_editar||currentUser.papel==='master')){ toast('Você não tem permissão para editar.'); return; }
+  if(!id && !(currentUser.pode_incluir||currentUser.papel==='master')){ toast('Você não tem permissão para incluir.'); return; }
   const p = id ? processos.find(x=>x.id===id) : null;
   const root=$('#modal-root');
   root.innerHTML = `
@@ -929,8 +935,11 @@ async function saveForm(id){
   $('#f-save').disabled=true;
   if(id){
     const old=processos.find(x=>x.id===id);
-    const {error}=await db.from('processos').update(obj).eq('id',id);
-    if(error){ toast('Erro: '+error.message); $('#f-save').disabled=false; return; }
+    const {error}=await db.rpc('sp_atualizar_processo',{ p_id:id, p:obj });
+    if(error){
+      toast(error.message&&error.message.includes('SEM_PERMISSAO')?'Você não tem permissão para editar.':'Erro: '+error.message);
+      $('#f-save').disabled=false; return;
+    }
     // registra mudanças campo a campo
     for(const f of ['andamento','providencias','observacao','cliente','acao','numero','sistema','data','alerta','data_alerta']){
       const a=(old[f]==null?'':String(old[f])), b=(obj[f]==null?'':String(obj[f]));
@@ -938,9 +947,12 @@ async function saveForm(id){
     }
     toast('Processo atualizado.');
   }else{
-    const {data,error}=await db.from('processos').insert(obj).select().single();
-    if(error){ toast('Erro: '+error.message); $('#f-save').disabled=false; return; }
-    await logAction('incluir', data.id, '', '', obj.cliente+' · '+obj.numero);
+    const {data,error}=await db.rpc('sp_inserir_processo',{ p:obj });
+    if(error){
+      toast(error.message&&error.message.includes('SEM_PERMISSAO')?'Você não tem permissão para incluir.':'Erro: '+error.message);
+      $('#f-save').disabled=false; return;
+    }
+    await logAction('incluir', data, '', '', obj.cliente+' · '+obj.numero);
     toast('Processo incluído.');
   }
   closeForm();
@@ -960,8 +972,8 @@ window.askDelete = function(id){
     </div></div></div>`;
   $('#ov').addEventListener('click',e=>{ if(e.target.id==='ov') closeForm(); });
   $('#del-ok').addEventListener('click', async ()=>{
-    const {error}=await db.from('processos').update({excluido:true}).eq('id',id);
-    if(error){ toast('Erro: '+error.message); return; }
+    const {error}=await db.rpc('sp_excluir_processo',{ p_id:id });
+    if(error){ toast(error.message&&error.message.includes('SEM_PERMISSAO')?'Você não tem permissão para excluir.':'Erro: '+error.message); return; }
     await logAction('excluir', id, 'excluido', 'false', 'true');
     closeForm(); toast('Processo escondido.'); await loadProcessos();
   });
