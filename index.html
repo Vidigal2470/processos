@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Soares Pacheco — Movimentação de Processos</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#B07D52">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SP Processos">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Albert+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --copper:#B07D52; --copper-dark:#8A5E38; --copper-soft:#E7DAC9;
+    --charcoal:#1A1A1A; --warm:#FAF7F2; --paper:#FFFFFF;
+    --line:#E8E0D5; --muted:#6B6357; --hint:#9A9387;
+    --ok:#2E7D5B; --danger:#B23B3B;
+    --shadow:0 1px 3px rgba(26,26,26,.06), 0 8px 30px rgba(26,26,26,.05);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:'Albert Sans',system-ui,sans-serif;
+    background:var(--warm); color:var(--charcoal);
+    font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+  }
+  .serif{font-family:'Cormorant Garamond',serif}
+  button{font-family:inherit; cursor:pointer}
+  input,select,textarea{font-family:inherit; font-size:15px}
+  .hidden{display:none !important}
+
+  /* ---------- LOGIN ---------- */
+  #auth{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px}
+  .auth-card{
+    width:100%; max-width:360px; background:var(--paper); border:1px solid var(--line);
+    border-radius:18px; padding:36px 30px 30px; box-shadow:var(--shadow);
+  }
+  .brand{text-align:center; margin-bottom:26px}
+  .brand img{height:64px; width:auto; margin:0 auto 6px; display:block}
+  .brand-logo{width:78px;height:78px;margin:0 auto 12px;display:block;
+    box-shadow:0 2px 10px rgba(138,94,56,.10)}
+  #sp-fallback{
+    width:56px;height:56px;margin:0 auto 12px;border:1.5px solid var(--copper);
+    border-radius:50%;display:none;align-items:center;justify-content:center;
+    color:var(--copper);font-family:'Cormorant Garamond',serif;font-size:24px;letter-spacing:1px;
+  }
+  .brand .name{font-family:'Cormorant Garamond',serif;font-size:22px;letter-spacing:3px;color:var(--charcoal)}
+  .brand .sub{font-size:10px;letter-spacing:5px;color:var(--copper);margin-top:2px}
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+  .field input,.field select,.field textarea{
+    width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;
+    background:var(--paper);color:var(--charcoal);outline:none;transition:border-color .15s;
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--copper)}
+  .pin-row{display:flex;gap:10px;justify-content:center;margin:6px 0 4px}
+  .pin-box{width:48px;height:56px;border:1px solid var(--line);border-radius:12px;background:var(--paper);
+    text-align:center;font-size:24px;color:var(--charcoal);outline:none}
+  .pin-box:focus{border-color:var(--copper)}
+  .btn-primary{width:100%;background:var(--copper);color:#fff;border:none;border-radius:10px;
+    padding:13px;font-size:15px;font-weight:500;transition:background .15s}
+  .btn-primary:hover{background:var(--copper-dark)}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed}
+  .auth-msg{font-size:13px;text-align:center;margin-top:14px;min-height:18px}
+  .auth-msg.err{color:var(--danger)}
+  .auth-foot{text-align:center;font-size:11px;color:var(--hint);margin-top:16px}
+
+  /* ---------- APP ---------- */
+  #app{max-width:760px;margin:0 auto;padding:0 16px 60px}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:16px 4px;position:sticky;top:0;background:var(--warm);z-index:5;border-bottom:1px solid var(--line)}
+  .topbar .left{display:flex;align-items:center;gap:9px;min-width:0}
+  .topbar img{height:38px;width:auto;flex-shrink:0}
+  #sp-fallback-app{width:38px;height:38px;border:1.4px solid var(--copper);border-radius:50%;
+    display:none;align-items:center;justify-content:center;color:var(--copper);flex-shrink:0;
+    font-family:'Cormorant Garamond',serif;font-size:16px}
+  .topbar .title{font-family:'Cormorant Garamond',serif;font-size:18px;letter-spacing:1px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .topbar .right{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);flex-shrink:0}
+  .chip-user{display:inline-flex;align-items:center;gap:5px;background:var(--copper-soft);
+    color:var(--copper-dark);padding:5px 10px;border-radius:20px;font-size:12px;white-space:nowrap;
+    max-width:160px;overflow:hidden;text-overflow:ellipsis}
+  .link-btn{background:none;border:none;color:var(--muted);font-size:13px;text-decoration:underline;padding:4px;white-space:nowrap}
+  .nav2{display:flex;gap:18px;padding:10px 4px 0}
+  .nav-link{background:none;border:none;color:var(--copper-dark);font-size:14px;font-weight:500;padding:4px 0;cursor:pointer}
+  .nav-link:hover{text-decoration:underline}
+  .btn-voltar{display:inline-flex;align-items:center;gap:6px;background:var(--copper-soft);color:var(--copper-dark);
+    border:none;border-radius:10px;padding:9px 14px;font-size:14px;font-weight:500;cursor:pointer}
+  .btn-voltar:hover{background:#dfcbb5}
+  @media(max-width:480px){
+    .topbar{padding:14px 2px}
+    .topbar .title{font-size:16px;letter-spacing:.3px}
+    .chip-user{max-width:118px;font-size:11px;padding:4px 8px}
+    .topbar .right{gap:6px}
+  }
+  .usr-card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+  .usr-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .usr-name{font-weight:600;font-size:15px}
+  .usr-badge{font-size:11px;color:var(--copper-dark);background:var(--copper-soft);padding:2px 8px;border-radius:20px;white-space:nowrap}
+  .usr-perms{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:13px;color:var(--muted)}
+  .usr-perms label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+  .usr-perms input{width:auto}
+  .usr-actions{display:flex;gap:10px;margin-top:12px}
+  .usr-actions button{font-size:13px;padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--muted);cursor:pointer}
+  .usr-actions .save{background:var(--copper);color:#fff;border-color:var(--copper)}
+  .usr-inactive{opacity:.55}
+
+  .toolbar{padding:16px 0 8px}
+  .search-row{display:flex;gap:8px;margin-bottom:12px}
+  .search{position:relative;flex:1}
+  .btn-search{background:var(--copper);color:#fff;border:none;border-radius:12px;padding:0 20px;font-size:14px;font-weight:500;white-space:nowrap}
+  .btn-search:hover{background:var(--copper-dark)}
+  #d-apply{background:var(--copper);color:#fff;border-color:var(--copper)}
+  .search input{width:100%;padding:12px 14px 12px 40px;border:1px solid var(--line);
+    border-radius:12px;background:var(--paper);outline:none}
+  .search input:focus{border-color:var(--copper)}
+  .search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%)}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .filt{font-size:13px;padding:6px 13px;border-radius:20px;border:1px solid var(--line);
+    background:var(--paper);color:var(--muted)}
+  .filt.active{background:var(--copper);color:#fff;border-color:var(--copper)}
+  .dates{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:10px;font-size:13px;color:var(--muted)}
+  .dates input{padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--paper)}
+  .bar2{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:16px 0 12px}
+  .btn-add{display:inline-flex;align-items:center;gap:6px;background:var(--copper);color:#fff;
+    border:none;border-radius:10px;padding:10px 16px;font-size:14px;font-weight:500}
+  .btn-add:hover{background:var(--copper-dark)}
+  .count{font-size:13px;color:var(--hint)}
+
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:border-color .12s}
+  .card:hover{border-color:var(--copper)}
+  .clear-q{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;
+    color:var(--hint);font-size:22px;line-height:1;padding:0 6px;display:none;cursor:pointer}
+  .clear-q:hover{color:var(--copper-dark)}
+  .search input{padding-right:34px}
+  .card .row1{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  .card .cli{font-weight:600;font-size:15px}
+  .card .acts{display:flex;gap:6px;flex-shrink:0}
+  .icon-btn{background:none;border:none;color:var(--hint);padding:4px;border-radius:6px;line-height:0}
+  .icon-btn:hover{color:var(--copper-dark);background:var(--warm)}
+  .card .acao{font-size:13px;color:var(--muted);margin:3px 0 9px}
+  .meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:9px}
+  .num{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--muted);
+    background:var(--warm);padding:3px 8px;border-radius:7px}
+  .tag{font-size:12px;padding:3px 9px;border-radius:7px}
+  .tag.eproc{background:#E1F5EE;color:#085041}
+  .tag.pje{background:#E6F1FB;color:#0C447C}
+  .tag.dcp{background:#FAEEDA;color:#633806}
+  .tag.ext{background:#EEEDFE;color:#3C3489}
+  .tag.grupo{background:#F1EFE8;color:#444441}
+  .date{margin-left:auto;font-size:12px;color:var(--hint);display:inline-flex;align-items:center;gap:4px}
+  .andline{font-size:13px}
+  .andline .lbl{color:var(--hint)}
+  .andline.empty{color:var(--hint);font-style:italic}
+  .prov{font-size:13px;margin-top:3px}
+  .prov .lbl{color:var(--hint)}
+  .empty-state{text-align:center;color:var(--hint);padding:50px 10px}
+
+  .suggest{position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--paper);
+    border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);z-index:20;overflow:hidden;display:none}
+  .suggest.show{display:block}
+  .sug-item{padding:10px 14px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--line)}
+  .sug-item:last-child{border-bottom:none}
+  .sug-item:hover{background:var(--warm);color:var(--copper-dark)}
+
+  .rep-head{display:flex;align-items:center;gap:14px;padding:14px 0 8px}
+  .rep-title{font-size:22px;letter-spacing:1px}
+  .rep-period{font-size:13px;color:var(--hint);margin:8px 0 14px}
+  .rep-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+  .mcard{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:13px 14px}
+  .mcard .ml{font-size:12px;color:var(--muted)}
+  .mcard .mv{font-size:26px;font-weight:600;color:var(--copper-dark)}
+  .rep-sec{font-size:13px;font-weight:600;color:var(--muted);margin:18px 0 10px}
+  .rep-item{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:11px 14px;margin-bottom:9px}
+  .ri-top{font-weight:500;font-size:14px}
+  .ri-mid{font-size:13px;margin-top:2px}
+  .ri-by{font-size:12px;color:var(--hint);margin-top:5px}
+  .rep-empty{font-size:13px;color:var(--hint);padding:4px 2px 10px}
+
+  #alert-banner{margin:14px 0 0}
+  .alert-head{font-size:14px;font-weight:600;color:var(--copper-dark);margin-bottom:8px}
+  .alert-item{background:#FDF6EC;border:1px solid var(--copper-soft);border-left:3px solid var(--copper);
+    border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:13px;cursor:pointer}
+  .alert-item:hover{background:#fbf0df}
+  .alert-when{display:block;color:var(--hint);font-size:12px;margin-top:3px}
+  .alert-more{background:var(--copper);color:#fff;border-radius:10px;padding:11px 12px;margin-bottom:8px;
+    font-size:13px;font-weight:600;cursor:pointer;text-align:center}
+  .alert-more:hover{background:var(--copper-dark)}
+  .alert-item{position:relative;padding-right:34px}
+  .alert-x{position:absolute;top:8px;right:8px;width:24px;height:24px;border:none;border-radius:6px;
+    background:rgba(0,0,0,.06);color:var(--muted);font-size:13px;line-height:1;cursor:pointer}
+  .alert-x:hover{background:var(--danger);color:#fff}
+  @keyframes alertPulse{0%,100%{box-shadow:0 0 0 0 rgba(176,125,82,0)}50%{box-shadow:0 0 0 4px rgba(176,125,82,.40)}}
+  .alert-blink{animation:alertPulse 1s ease-in-out 4}
+  .exc-item{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+  .exc-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+  .exc-tipo{font-weight:600;font-size:13px;color:var(--copper-dark)}
+  .exc-when{font-size:12px;color:var(--hint);white-space:nowrap}
+  .exc-desc{font-size:14px;margin-top:3px}
+  .exc-who{font-size:12px;color:var(--muted);margin-top:3px}
+  .card-alert{margin-top:8px;font-size:13px;color:var(--copper-dark);background:#FDF6EC;
+    border-radius:8px;padding:6px 10px;display:inline-block}
+  .alert-when-inline{color:var(--hint)}
+  .ver{text-align:center;font-size:11px;color:var(--hint);padding:24px 0 4px;letter-spacing:.5px}
+  .ios-hint{font-size:12px;color:var(--copper-dark);background:var(--copper-soft);border-radius:10px;padding:10px 12px;margin-top:14px;text-align:center;line-height:1.45}
+
+  /* ---------- MODAL ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(26,26,26,.45);display:flex;align-items:flex-start;
+    justify-content:center;padding:30px 16px;overflow-y:auto;z-index:50}
+  .modal{background:var(--paper);border-radius:18px;width:100%;max-width:440px;padding:24px;box-shadow:var(--shadow)}
+  .modal h3{font-family:'Cormorant Garamond',serif;font-size:22px;margin:0 0 16px;letter-spacing:.5px}
+  .modal .field label .req{color:var(--copper)}
+  .cnj-status{font-size:12px;margin-top:5px;min-height:16px}
+  .cnj-status.ok{color:var(--ok)}
+  .cnj-status.warn{color:var(--danger)}
+  .modal-actions{display:flex;gap:10px;margin-top:8px}
+  .btn-ghost{flex:1;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px;color:var(--muted)}
+  .btn-ghost:hover{background:var(--warm)}
+  .modal .btn-primary{flex:1;width:auto}
+  .toggle-row{display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:14px;color:var(--muted)}
+  .toggle-row input{width:auto}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--charcoal);
+    color:#fff;padding:11px 18px;border-radius:10px;font-size:14px;z-index:80;opacity:0;transition:opacity .2s}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN / SETUP ===== -->
+<div id="auth">
+  <div class="auth-card">
+    <div class="brand">
+      <img class="brand-logo" src="login-logo.png" alt="Soares Pacheco" onerror="this.style.display='none';document.getElementById('sp-fallback').style.display='flex'">
+      <div id="sp-fallback">SP</div>
+      <div class="name">SOARES PACHECO</div>
+      <div class="sub">ADVOCACIA</div>
+    </div>
+
+    <!-- login normal -->
+    <div id="login-box">
+      <div class="field">
+        <label>Quem é você?</label>
+        <select id="login-user"></select>
+      </div>
+      <div class="field">
+        <label>PIN de 4 dígitos</label>
+        <div class="pin-row" id="login-pin">
+          <input class="pin-box" maxlength="1" inputmode="numeric" type="password">
+          <input class="pin-box" maxlength="1" inputmode="numeric" type="password">
+          <input class="pin-box" maxlength="1" inputmode="numeric" type="password">
+          <input class="pin-box" maxlength="1" inputmode="numeric" type="password">
+        </div>
+      </div>
+      <button class="btn-primary" id="login-btn">Entrar</button>
+    </div>
+
+    <!-- primeiro acesso: criar master -->
+    <div id="setup-box" class="hidden">
+      <p style="font-size:13px;color:var(--muted);text-align:center;margin-top:0">
+        Primeiro acesso. Crie o login <b>master</b> do escritório.</p>
+      <div class="field"><label>Seu nome</label><input id="setup-name" type="text" placeholder="Ex.: Dra. Patrícia"></div>
+      <div class="field"><label>Crie um PIN de 4 dígitos</label>
+        <input id="setup-pin" type="password" inputmode="numeric" maxlength="4" placeholder="••••" style="text-align:center;letter-spacing:8px">
+      </div>
+      <div class="field"><label>Repita o PIN</label>
+        <input id="setup-pin2" type="password" inputmode="numeric" maxlength="4" placeholder="••••" style="text-align:center;letter-spacing:8px">
+      </div>
+      <button class="btn-primary" id="setup-btn">Criar acesso master</button>
+    </div>
+
+    <div class="auth-msg" id="auth-msg"></div>
+    <div class="auth-foot">Acesso protegido · uso interno do escritório</div>
+    <div class="ios-hint hidden" id="ios-hint">💡 Para instalar no iPhone: toque em <b>Compartilhar</b>, depois em <b>“Ver mais”</b> (a setinha para baixo ⌄) e, por fim, em <b>“Adicionar à Tela de Início”</b>.</div>
+    <div class="ver" id="ver-auth"></div>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div id="app" class="hidden">
+  <div class="topbar">
+    <div class="left">
+      <img src="soares_pacheco_monograma.png" alt="" onerror="this.style.display='none';document.getElementById('sp-fallback-app').style.display='flex'">
+      <div id="sp-fallback-app">SP</div>
+      <span class="title">Soares Pacheco</span>
+    </div>
+    <div class="right">
+      <span class="chip-user" id="who"></span>
+      <button class="link-btn" id="logout">sair</button>
+    </div>
+  </div>
+  <div class="nav2">
+    <button class="nav-link" id="rep-btn">Relatórios</button>
+    <button class="nav-link hidden" id="users-btn">Usuários</button>
+    <button class="nav-link hidden" id="fin-btn">Finalizados</button>
+    <button class="nav-link hidden" id="exc-btn">Excluídos</button>
+    <button class="nav-link" id="pin-btn">Minha senha</button>
+  </div>
+
+  <div id="main-view">
+  <div id="alert-banner" class="hidden"></div>
+  <div class="toolbar">
+    <div class="search-row">
+      <div class="search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A9387" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="q" type="text" autocomplete="off" placeholder="Buscar por cliente, número ou andamento…">
+        <button class="clear-q" id="clear-q" aria-label="Limpar busca">×</button>
+        <div class="suggest" id="suggest"></div>
+      </div>
+      <button class="btn-search" id="search-btn">Buscar</button>
+    </div>
+    <div class="filters" id="sys-filters">
+      <button class="filt active" data-sys="">Todos</button>
+      <button class="filt" data-sys="EPROC">EPROC</button>
+      <button class="filt" data-sys="PJE">PJE</button>
+      <button class="filt" data-sys="DCP">DCP</button>
+      <button class="filt" data-sys="__ext" id="filt-ext">Extrajudicial</button>
+    </div>
+  </div>
+
+  <div class="bar2">
+    <button class="btn-add" id="add-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Incluir processo</button>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div id="list"></div>
+  <div class="ver" id="ver"></div>
+  </div>
+
+  <div id="reports-view" class="hidden"></div>
+  <div id="users-view" class="hidden"></div>
+  <div id="fin-view" class="hidden"></div>
+  <div id="exc-view" class="hidden"></div>
+</div>
+
+<div id="modal-root"></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ===================== CONFIG ===================== */
+const APP_VERSION = '1.0';
+const SUPABASE_URL = 'https://ykqyqioyiamljnlbmyez.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_R842aVlOVv69dFzA6X50tQ__vREtPFz';
+let sessionToken = null;
+let db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+function setClient(token){
+  sessionToken = token || null;
+  db = token
+    ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {global:{headers:{'x-sp-token':token}}})
+    : supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}
+
+let currentUser = null;
+let processos = [];
+let filterSys = '';
+let onlyExt = false;
+let inSubview = false;
+let alertsExpanded = false;
+
+/* navegação entre lista e telas internas (faz o botão voltar do celular funcionar) */
+function enterSubview(){ if(!inSubview){ try{ history.pushState({sub:true},''); }catch(e){} inSubview=true; } }
+function showMainView(){ inSubview=false; $('#reports-view').classList.add('hidden'); $('#users-view').classList.add('hidden'); $('#fin-view').classList.add('hidden'); $('#exc-view').classList.add('hidden'); $('#main-view').classList.remove('hidden'); }
+function goBack(){ if(inSubview){ try{ history.back(); }catch(e){ showMainView(); } } else { showMainView(); } }
+window.addEventListener('popstate', ()=>{ if(inSubview) showMainView(); });
+
+/* ===================== HELPERS ===================== */
+const $ = s => document.querySelector(s);
+const norm = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const onlyDigits = s => (s||'').replace(/\D/g,'');
+
+function toast(msg){
+  const t=$('#toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+function authMsg(msg, err){
+  const m=$('#auth-msg'); m.textContent=msg||''; m.className='auth-msg'+(err?' err':'');
+}
+async function hashPin(pin){
+  try{
+    const data=new TextEncoder().encode('sp-salt:'+pin);
+    const buf=await crypto.subtle.digest('SHA-256',data);
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }catch(e){
+    let h=5381; const s='sp-salt:'+pin; for(let i=0;i<s.length;i++){h=((h<<5)+h)+s.charCodeAt(i)}
+    return 'f'+(h>>>0).toString(16);
+  }
+}
+function fmtDate(iso){
+  if(!iso) return '';
+  const m=String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
+}
+
+/* ----- CNJ: máscara e validação ----- */
+function maskCNJ(v){
+  const d=onlyDigits(v).slice(0,20);
+  let out=d;
+  if(d.length>7) out=d.slice(0,7)+'-'+d.slice(7);
+  if(d.length>9) out=d.slice(0,7)+'-'+d.slice(7,9)+'.'+d.slice(9);
+  if(d.length>13) out=d.slice(0,7)+'-'+d.slice(7,9)+'.'+d.slice(9,13)+'.'+d.slice(13);
+  if(d.length>14) out=d.slice(0,7)+'-'+d.slice(7,9)+'.'+d.slice(9,13)+'.'+d.slice(13,14)+'.'+d.slice(14);
+  if(d.length>16) out=d.slice(0,7)+'-'+d.slice(7,9)+'.'+d.slice(9,13)+'.'+d.slice(13,14)+'.'+d.slice(14,16)+'.'+d.slice(16);
+  return out;
+}
+function validCNJ(v){
+  const d=onlyDigits(v);
+  if(d.length!==20) return {ok:false, full:false};
+  const seq=d.slice(0,7), dv=d.slice(7,9), ano=d.slice(9,13), j=d.slice(13,14), tr=d.slice(14,16), ori=d.slice(16,20);
+  try{
+    const rearr=BigInt(seq+ano+j+tr+ori+dv);
+    return {ok:(rearr % 97n)===1n, full:true};
+  }catch(e){ return {ok:false, full:true}; }
+}
+
+/* ===================== AUTH ===================== */
+async function boot(){
+  authMsg('Conectando…');
+  const {data, error} = await db.rpc('sp_usuarios_publicos');
+  if(error){ authMsg('Erro ao conectar: '+error.message, true); return; }
+  authMsg('');
+  if(!data || data.length===0){
+    $('#login-box').classList.add('hidden');
+    $('#setup-box').classList.remove('hidden');
+  }else{
+    $('#setup-box').classList.add('hidden');
+    $('#login-box').classList.remove('hidden');
+    const sel=$('#login-user'); sel.innerHTML='';
+    data.forEach(u=>{
+      const o=document.createElement('option');
+      o.value=u.id; o.textContent=u.nome+(u.papel==='master'?' (master)':'');
+      sel.appendChild(o);
+    });
+  }
+}
+
+function pinDigits(){
+  return Array.from(document.querySelectorAll('#login-pin .pin-box')).map(b=>b.value).join('');
+}
+// navegação automática entre as caixinhas do PIN + Enter pra entrar
+document.querySelectorAll('#login-pin .pin-box').forEach((box,i,arr)=>{
+  box.addEventListener('input',()=>{ if(box.value && i<arr.length-1) arr[i+1].focus(); });
+  box.addEventListener('keydown',e=>{
+    if(e.key==='Backspace'&&!box.value&&i>0) arr[i-1].focus();
+    if(e.key==='Enter') $('#login-btn').click();
+  });
+});
+
+$('#login-btn').addEventListener('click', async ()=>{
+  const sel=$('#login-user'); const opt=sel.selectedOptions[0];
+  if(!opt){ authMsg('Cadastre um usuário primeiro.',true); return; }
+  const pin=pinDigits();
+  if(pin.length!==4){ authMsg('Digite os 4 dígitos do PIN.',true); return; }
+  authMsg('Verificando…');
+  const {data,error}=await db.rpc('sp_login',{ p_id:Number(opt.value), p_pin:pin });
+  if(error){
+    const m=error.message||'';
+    if(m.includes('BLOQUEADO')) authMsg('Bloqueado por tentativas. Tente de novo em 15 minutos.',true);
+    else if(m.includes('PIN_INCORRETO')) authMsg('PIN incorreto.',true);
+    else authMsg('Não foi possível entrar.',true);
+    document.querySelectorAll('#login-pin .pin-box').forEach(b=>b.value='');
+    document.querySelector('#login-pin .pin-box').focus();
+    return;
+  }
+  setClient(data.token);
+  currentUser={ nome:data.nome, papel:data.papel, pode_editar:data.pode_editar, pode_deletar:data.pode_deletar, pode_incluir:data.pode_incluir!==false, pode_ver_relatorio:data.pode_ver_relatorio!==false };
+  await logAction('login', null, '', '', '');
+  if(data.trocar_senha){ openPinChange(true); } else { enterApp(); }
+});
+
+$('#setup-btn').addEventListener('click', async ()=>{
+  const nome=$('#setup-name').value.trim();
+  const p1=$('#setup-pin').value, p2=$('#setup-pin2').value;
+  if(!nome){ authMsg('Digite seu nome.',true); return; }
+  if(p1.length!==4 || !/^\d{4}$/.test(p1)){ authMsg('O PIN deve ter 4 números.',true); return; }
+  if(p1!==p2){ authMsg('Os PINs não conferem.',true); return; }
+  authMsg('Criando…');
+  const {data,error}=await db.rpc('sp_setup_master',{ p_nome:nome, p_pin:p1 });
+  if(error){ authMsg('Erro: '+error.message,true); return; }
+  setClient(data);
+  currentUser={ nome, papel:'master', pode_editar:true, pode_deletar:true, pode_incluir:true, pode_ver_relatorio:true };
+  await logAction('login', null, '', '', '');
+  enterApp();
+});
+$('#setup-pin2').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#setup-btn').click(); });
+
+$('#logout').addEventListener('click', async ()=>{
+  if(sessionToken){ try{ await db.rpc('sp_logout',{ p_token: sessionToken }); }catch(e){} }
+  setClient(null);
+  currentUser=null;
+  $('#app').classList.add('hidden');
+  $('#auth').classList.remove('hidden');
+  document.querySelectorAll('#login-pin .pin-box').forEach(b=>b.value='');
+  boot();
+});
+
+function enterApp(){
+  $('#auth').classList.add('hidden');
+  $('#app').classList.remove('hidden');
+  $('#main-view').classList.remove('hidden');
+  $('#reports-view').classList.add('hidden');
+  $('#users-view').classList.add('hidden');
+  $('#fin-view').classList.add('hidden');
+  $('#exc-view').classList.add('hidden');
+  $('#rep-btn').classList.toggle('hidden', currentUser.pode_ver_relatorio===false);
+  $('#users-btn').classList.toggle('hidden', currentUser.papel!=='master');
+  $('#fin-btn').classList.toggle('hidden', currentUser.papel!=='master');
+  $('#exc-btn').classList.toggle('hidden', currentUser.papel!=='master');
+  $('#add-btn').classList.toggle('hidden', !(currentUser.pode_incluir||currentUser.papel==='master'));
+  $('#who').textContent = currentUser.nome + (currentUser.papel==='master'?' · master':'');
+  $('#ver').textContent = 'Soares Pacheco · v'+APP_VERSION;
+  loadProcessos();
+}
+
+/* ===================== REGISTRO (auditoria) ===================== */
+async function logAction(acao, processo_id, campo, antigo, novo){
+  try{
+    await db.from('registro').insert({
+      usuario: currentUser? currentUser.nome : '?',
+      acao, processo_id: processo_id||null, campo: campo||null,
+      valor_antigo: antigo||null, valor_novo: novo||null
+    });
+  }catch(e){ /* não trava o app se o log falhar */ }
+}
+
+/* ===================== PROCESSOS ===================== */
+async function loadProcessos(){
+  $('#list').innerHTML='<div class="empty-state">Carregando…</div>';
+  const {data,error}=await db.from('processos').select('*');
+  if(error){ $('#list').innerHTML='<div class="empty-state">Erro ao carregar: '+error.message+'</div>'; return; }
+  processos=(data||[]).filter(p=>p.excluido!==true);
+  render();
+  renderAlerts();
+}
+
+function renderAlerts(){
+  const b=$('#alert-banner'); if(!b) return;
+  const today=new Date(); today.setHours(0,0,0,0);
+  const items=processos.filter(p=>{
+    if(!p.data_alerta) return false;
+    const diff=Math.round((new Date(p.data_alerta+'T00:00:00')-today)/86400000);
+    return diff>=0 && diff<=3;
+  }).sort((a,b)=>(a.data_alerta||'').localeCompare(b.data_alerta||''));
+  if(items.length===0){ b.innerHTML=''; b.classList.add('hidden'); return; }
+  b.classList.remove('hidden');
+  const canEdit = currentUser && (currentUser.pode_editar || currentUser.papel==='master');
+  const itemHTML=(p,isFirst)=>{
+    const diff=Math.round((new Date(p.data_alerta+'T00:00:00')-today)/86400000);
+    const quando = diff===0?'é hoje':(diff===1?'é amanhã':'em '+diff+' dias');
+    const blink = isFirst && diff<=1 ? ' alert-blink' : '';
+    const x = canEdit ? `<button class="alert-x" title="Marcar como resolvido (remove o aviso)" onclick="event.stopPropagation();resolveAlert(${p.id})">✕</button>` : '';
+    return `<div class="alert-item${blink}" onclick="openForm(${p.id})">${x}<b>${esc(p.cliente)}</b> — ${esc(p.alerta||'Alerta')}<span class="alert-when">${fmtDate(p.data_alerta)} · ${quando}</span></div>`;
+  };
+  const shown = alertsExpanded ? items : items.slice(0,1);
+  let html = shown.map((p,i)=>itemHTML(p,i===0)).join('');
+  if(items.length>1){
+    const rest=items.length-1;
+    html += alertsExpanded
+      ? `<div class="alert-more" onclick="toggleAlerts()">▲ mostrar menos</div>`
+      : `<div class="alert-more" onclick="toggleAlerts()">🔔 +${rest} outro${rest>1?'s':''} aviso${rest>1?'s':''} nos próximos dias — ver todos</div>`;
+  }
+  b.innerHTML=html;
+}
+window.toggleAlerts=function(){ alertsExpanded=!alertsExpanded; renderAlerts(); };
+window.resolveAlert=async function(id){
+  if(!confirm('Remover este aviso? O processo continua na lista; fica registrado quem removeu.')) return;
+  const {error}=await db.rpc('sp_remover_alerta',{ p_id:id });
+  if(error){ toast(error.message&&error.message.includes('SEM_PERMISSAO')?'Sem permissão para remover o aviso.':'Erro: '+error.message); return; }
+  toast('Aviso removido.'); await loadProcessos();
+};
+
+function passesFilters(p){
+  if(onlyExt){ if(!(p.extrajudicial===true)) return false; }
+  else if(filterSys){ if((p.sistema||'').toUpperCase()!==filterSys) return false; }
+  const raw=$('#q').value.trim();
+  if(raw){
+    const q=norm(raw);
+    const qd=onlyDigits(raw);
+    const hay=norm([p.cliente,p.acao,p.andamento,p.providencias,p.observacao,p.alerta,p.numero].join(' '));
+    const textMatch = hay.includes(q);
+    const numMatch = qd.length>=2 && onlyDigits(p.numero).includes(qd);
+    if(!(textMatch || numMatch)) return false;
+  }
+  return true;
+}
+
+function render(){
+  const list=$('#list');
+  const rows=processos.filter(passesFilters)
+    .sort((a,b)=>{
+      const da=a.data||'9999-12-31', db2=b.data||'9999-12-31';
+      if(da!==db2) return db2.localeCompare(da);
+      return (b.id||0)-(a.id||0);
+    });
+  $('#count').textContent = rows.length+' de '+processos.length+' processos';
+  if(rows.length===0){ list.innerHTML='<div class="empty-state">Nenhum processo encontrado.</div>'; return; }
+  list.innerHTML = rows.map(cardHTML).join('');
+}
+
+function sysTag(s){
+  const u=(s||'').toUpperCase();
+  if(u==='EPROC') return '<span class="tag eproc">EPROC</span>';
+  if(u==='PJE') return '<span class="tag pje">PJE</span>';
+  if(u==='DCP') return '<span class="tag dcp">DCP</span>';
+  return '';
+}
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function cardHTML(p){
+  const canEdit = currentUser.pode_editar || currentUser.papel==='master';
+  const canDel = currentUser.pode_deletar || currentUser.papel==='master';
+  const acts =
+    (canEdit?`<button class="icon-btn" title="Editar" onclick="openForm(${p.id})"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>`:'') +
+    (canDel?`<button class="icon-btn" title="Esconder" onclick="askDelete(${p.id})"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>`:'');
+  const ext = p.extrajudicial===true ? '<span class="tag ext">Extrajudicial</span>' : '';
+  const and = p.andamento ? `<div class="andline"><span class="lbl">Andamento:</span> ${esc(p.andamento)}</div>`
+                          : `<div class="andline empty">Sem andamento ainda</div>`;
+  const prov = p.providencias ? `<div class="prov"><span class="lbl">Providência:</span> ${esc(p.providencias)}</div>` : '';
+  const obs = p.observacao ? `<div class="prov"><span class="lbl">Obs.:</span> ${esc(p.observacao)}</div>` : '';
+  const alerta = (p.alerta || p.data_alerta) ? `<div class="card-alert">🔔 ${esc(p.alerta||'Alerta')}${p.data_alerta?` <span class="alert-when-inline">· ${fmtDate(p.data_alerta)}</span>`:''}</div>` : '';
+  return `<div class="card"${canEdit?` onclick="openForm(${p.id})" style="cursor:pointer"`:''}>
+    <div class="row1"><span class="cli">${esc(p.cliente)||'(sem nome)'}</span><span class="acts" onclick="event.stopPropagation()">${acts}</span></div>
+    <div class="acao">${esc(p.acao)||'—'}</div>
+    <div class="meta">
+      <span class="num">${esc(p.numero)||'—'}</span>${sysTag(p.sistema)}${ext}
+      <span class="date">${fmtDate(p.data)}</span>
+    </div>
+    ${and}${prov}${obs}${alerta}
+  </div>`;
+}
+
+/* ----- filtros UI ----- */
+function resetSysFilter(){
+  filterSys=''; onlyExt=false;
+  document.querySelectorAll('#sys-filters .filt').forEach(x=>x.classList.remove('active'));
+  const all=document.querySelector('#sys-filters .filt[data-sys=""]'); if(all) all.classList.add('active');
+}
+$('#sys-filters').addEventListener('click',e=>{
+  const b=e.target.closest('.filt'); if(!b) return;
+  document.querySelectorAll('#sys-filters .filt').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  if(b.dataset.sys==='__ext'){ onlyExt=true; filterSys=''; }
+  else { onlyExt=false; filterSys=b.dataset.sys; }
+  render();
+});
+function toggleClear(){ $('#clear-q').style.display = $('#q').value ? 'block' : 'none'; }
+$('#q').addEventListener('input', ()=>{ toggleClear(); resetSysFilter(); render(); showSuggest(); });
+$('#q').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); hideSuggest(); resetSysFilter(); render(); } });
+$('#search-btn').addEventListener('click', ()=>{ hideSuggest(); resetSysFilter(); render(); });
+$('#clear-q').addEventListener('click', ()=>{ $('#q').value=''; toggleClear(); hideSuggest(); resetSysFilter(); render(); $('#q').focus(); });
+document.addEventListener('click', e=>{ if(!e.target.closest('.search')) hideSuggest(); });
+
+function showSuggest(){
+  const raw=$('#q').value.trim(); const box=$('#suggest');
+  if(!raw){ hideSuggest(); return; }
+  const q=norm(raw);
+  const names=[...new Set(processos.map(p=>p.cliente).filter(Boolean))];
+  const starts=names.filter(n=>norm(n).startsWith(q));
+  const contains=names.filter(n=>!norm(n).startsWith(q) && norm(n).includes(q));
+  const list=[...starts, ...contains].slice(0,6);
+  if(list.length===0){ hideSuggest(); return; }
+  box.innerHTML=list.map(n=>`<div class="sug-item" data-n="${esc(n)}">${esc(n)}</div>`).join('');
+  box.classList.add('show');
+  box.querySelectorAll('.sug-item').forEach(it=>{
+    it.addEventListener('click',()=>{ $('#q').value=it.dataset.n; toggleClear(); hideSuggest(); resetSysFilter(); render(); });
+  });
+}
+function hideSuggest(){ const b=$('#suggest'); if(b){ b.classList.remove('show'); b.innerHTML=''; } }
+
+/* ===================== RELATÓRIOS ===================== */
+function isoDate(d){ return d.toISOString().slice(0,10); }
+$('#rep-btn').addEventListener('click', openReports);
+
+function openReports(){
+  $('#main-view').classList.add('hidden');
+  $('#users-view').classList.add('hidden');
+  $('#exc-view').classList.add('hidden');
+  const v=$('#reports-view'); v.classList.remove('hidden');
+  v.innerHTML=`
+    <div class="rep-head">
+      <button class="btn-voltar" id="rep-back">← Voltar para a lista</button>
+      <span class="rep-title serif">Relatórios</span>
+    </div>
+    <div class="filters" id="rep-presets">
+      <button class="filt active" data-d="7">Semana</button>
+      <button class="filt" data-d="30">Mês</button>
+      <button class="filt" data-d="custom">Período</button>
+    </div>
+    <div class="dates" id="rep-custom" style="display:none">
+      De <input type="date" id="r-from"> até <input type="date" id="r-to">
+      <button class="filt" id="r-gen">Gerar</button>
+    </div>
+    <div id="rep-result"></div>`;
+  v.querySelector('#rep-back').addEventListener('click', goBack);
+  v.querySelector('#rep-presets').addEventListener('click',e=>{
+    const b=e.target.closest('.filt'); if(!b) return;
+    v.querySelectorAll('#rep-presets .filt').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+    if(b.dataset.d==='custom'){ v.querySelector('#rep-custom').style.display='flex'; }
+    else { v.querySelector('#rep-custom').style.display='none'; genReportDays(parseInt(b.dataset.d,10)); }
+  });
+  v.querySelector('#r-gen').addEventListener('click',()=>genReportRange(v.querySelector('#r-from').value, v.querySelector('#r-to').value));
+  genReportDays(7);
+  enterSubview();
+}
+function closeReports(){ showMainView(); }
+
+/* ===================== USUÁRIOS (master) ===================== */
+$('#users-btn').addEventListener('click', openUsers);
+function closeUsers(){ $('#users-view').classList.add('hidden'); $('#main-view').classList.remove('hidden'); }
+
+async function openUsers(){
+  $('#main-view').classList.add('hidden');
+  $('#reports-view').classList.add('hidden');
+  $('#exc-view').classList.add('hidden');
+  const v=$('#users-view'); v.classList.remove('hidden');
+  v.innerHTML=`
+    <div class="rep-head">
+      <button class="btn-voltar" id="usr-back">← Voltar para a lista</button>
+      <span class="rep-title serif">Usuários</span>
+    </div>
+    <div class="usr-card">
+      <div class="usr-name" style="margin-bottom:10px">Adicionar usuário</div>
+      <div class="field"><label>Nome</label><input id="nu-nome" type="text" placeholder="Ex.: Maria"></div>
+      <div class="field"><label>PIN de 4 dígitos</label><input id="nu-pin" type="password" inputmode="numeric" maxlength="4" placeholder="••••" style="letter-spacing:6px"></div>
+      <div class="usr-perms">
+        <label><input type="checkbox" id="nu-inc" checked> Pode incluir</label>
+        <label><input type="checkbox" id="nu-edit" checked> Pode editar</label>
+        <label><input type="checkbox" id="nu-del"> Pode excluir</label>
+        <label><input type="checkbox" id="nu-rel" checked> Pode ver relatório</label>
+      </div>
+      <div class="usr-actions"><button class="save" id="nu-save">Adicionar usuário</button></div>
+    </div>
+    <div class="rep-sec">Equipe</div>
+    <div id="usr-list"><div class="empty-state">Carregando…</div></div>`;
+  v.querySelector('#usr-back').addEventListener('click', goBack);
+  v.querySelector('#nu-save').addEventListener('click', addUser);
+  loadUsers();
+  enterSubview();
+}
+
+async function loadUsers(){
+  const box=$('#usr-list');
+  const {data,error}=await db.rpc('sp_list_users');
+  if(error){ box.innerHTML='<div class="empty-state">Erro: '+esc(error.message)+'</div>'; return; }
+  box.innerHTML=(data||[]).map(userCard).join('');
+  (data||[]).forEach(u=>{
+    if(u.papel==='master') return;
+    const root=document.getElementById('u-'+u.id); if(!root) return;
+    root.querySelector('.save').addEventListener('click',()=>saveUser(u.id, root));
+    root.querySelector('.resetpin').addEventListener('click',()=>resetPin(u.id));
+    const del=root.querySelector('.delusr'); if(del) del.addEventListener('click',()=>deleteUser(u.id,u.nome));
+  });
+}
+
+async function deleteUser(id,nome){
+  if(!confirm('Excluir definitivamente o usuário "'+nome+'"? Ele some da lista (a exclusão fica registrada). Para usar de novo, é só cadastrar outra vez.')) return;
+  const {error}=await db.rpc('sp_delete_user',{ p_id:id });
+  if(error){ toast(error.message&&error.message.includes('PRECISA_INATIVAR')?'Inative o usuário antes de excluir.':'Erro: '+error.message); return; }
+  toast('Usuário excluído.'); loadUsers();
+}
+
+function userCard(u){
+  if(u.papel==='master'){
+    return `<div class="usr-card"><div class="usr-top"><span class="usr-name">${esc(u.nome)}</span><span class="usr-badge">master · acesso total</span></div></div>`;
+  }
+  return `<div class="usr-card ${u.ativo?'':'usr-inactive'}" id="u-${u.id}">
+    <div class="usr-top"><span class="usr-name">${esc(u.nome)}</span><span class="usr-badge">${u.ativo?'ativo':'inativo'}</span></div>
+    <div class="usr-perms">
+      <label><input type="checkbox" class="p-inc" ${u.pode_incluir?'checked':''}> Pode incluir</label>
+      <label><input type="checkbox" class="p-edit" ${u.pode_editar?'checked':''}> Pode editar</label>
+      <label><input type="checkbox" class="p-del" ${u.pode_deletar?'checked':''}> Pode excluir</label>
+      <label><input type="checkbox" class="p-rel" ${u.pode_ver_relatorio?'checked':''}> Pode ver relatório</label>
+      <label><input type="checkbox" class="p-ativo" ${u.ativo?'checked':''}> Ativo</label>
+    </div>
+    <div class="usr-actions">
+      <button class="save">Salvar</button>
+      <button class="resetpin">Trocar PIN</button>
+      ${u.ativo?'':'<button class="delusr" style="color:var(--danger);border-color:var(--danger)">Excluir</button>'}
+    </div>
+  </div>`;
+}
+
+async function addUser(){
+  const nome=$('#nu-nome').value.trim();
+  const pin=$('#nu-pin').value;
+  if(!nome){ toast('Informe o nome.'); return; }
+  if(!/^\d{4}$/.test(pin)){ toast('PIN deve ter 4 números.'); return; }
+  const {error}=await db.rpc('sp_create_user',{ p_nome:nome, p_pin:pin,
+    p_editar:$('#nu-edit').checked, p_deletar:$('#nu-del').checked, p_incluir:$('#nu-inc').checked, p_relatorio:$('#nu-rel').checked });
+  if(error){ toast('Erro: '+error.message); return; }
+  toast('Usuário criado.');
+  $('#nu-nome').value=''; $('#nu-pin').value='';
+  loadUsers();
+}
+
+async function saveUser(id, root){
+  const {error}=await db.rpc('sp_update_user',{ p_id:id,
+    p_editar:root.querySelector('.p-edit').checked,
+    p_deletar:root.querySelector('.p-del').checked,
+    p_incluir:root.querySelector('.p-inc').checked,
+    p_relatorio:root.querySelector('.p-rel').checked,
+    p_ativo:root.querySelector('.p-ativo').checked });
+  if(error){ toast('Erro: '+error.message); return; }
+  toast('Permissões salvas.'); loadUsers();
+}
+
+async function resetPin(id){
+  const novo=prompt('Novo PIN de 4 dígitos:');
+  if(novo===null) return;
+  if(!/^\d{4}$/.test(novo)){ toast('PIN deve ter 4 números.'); return; }
+  const {error}=await db.rpc('sp_reset_pin',{ p_id:id, p_pin:novo });
+  if(error){ toast('Erro: '+error.message); return; }
+  toast('PIN atualizado.');
+}
+
+/* ===================== EXCLUÍDOS (master) ===================== */
+$('#exc-btn').addEventListener('click', openExcluidos);
+async function openExcluidos(){
+  $('#main-view').classList.add('hidden');
+  $('#reports-view').classList.add('hidden');
+  $('#users-view').classList.add('hidden');
+  $('#fin-view').classList.add('hidden');
+  const v=$('#exc-view'); v.classList.remove('hidden');
+  v.innerHTML=`<div class="rep-head">
+      <button class="btn-voltar" id="exc-back">← Voltar para a lista</button>
+      <span class="rep-title serif">Excluídos</span>
+    </div>
+    <p class="rep-empty">Alertas removidos e usuários excluídos, com quem realizou a ação.</p>
+    <div id="exc-list"><div class="empty-state">Carregando…</div></div>`;
+  v.querySelector('#exc-back').addEventListener('click', goBack);
+  enterSubview();
+  const {data,error}=await db.from('registro').select('*')
+    .in('acao',['remover_alerta','excluir_usuario'])
+    .order('criado_em',{ascending:false}).limit(200);
+  const box=$('#exc-list');
+  if(error){ box.innerHTML='<div class="empty-state">Erro: '+esc(error.message)+'</div>'; return; }
+  if(!data||data.length===0){ box.innerHTML='<div class="empty-state">Nada excluído ainda.</div>'; return; }
+  box.innerHTML=data.map(r=>{
+    let tipo,desc;
+    if(r.acao==='remover_alerta'){ tipo='Alerta removido'; desc=(r.valor_antigo||'')+(r.campo?(' — '+r.campo):''); }
+    else { tipo='Usuário excluído'; desc=r.campo||r.valor_antigo||''; }
+    let quando=''; try{ quando=new Date(r.criado_em).toLocaleString('pt-BR'); }catch(e){ quando=r.criado_em||''; }
+    return `<div class="exc-item">
+      <div class="exc-top"><span class="exc-tipo">${tipo}</span><span class="exc-when">${esc(quando)}</span></div>
+      <div class="exc-desc">${esc(desc)||'—'}</div>
+      <div class="exc-who">por ${esc(r.usuario||'?')}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ===================== FINALIZADOS (master) ===================== */
+$('#fin-btn').addEventListener('click', openFinalizados);
+async function openFinalizados(){
+  $('#main-view').classList.add('hidden');
+  $('#reports-view').classList.add('hidden');
+  $('#users-view').classList.add('hidden');
+  $('#exc-view').classList.add('hidden');
+  const v=$('#fin-view'); v.classList.remove('hidden');
+  v.innerHTML=`<div class="rep-head">
+      <button class="btn-voltar" id="fin-back">← Voltar para a lista</button>
+      <span class="rep-title serif">Processos Finalizados</span>
+    </div>
+    <p class="rep-empty">Processos encerrados — concluídos ou com desistência. Apenas o master pode ver e restaurar.</p>
+    <div id="fin-list"><div class="empty-state">Carregando…</div></div>`;
+  v.querySelector('#fin-back').addEventListener('click', goBack);
+  enterSubview();
+  const {data,error}=await db.from('processos').select('*').eq('excluido',true).order('id',{ascending:false});
+  const box=$('#fin-list');
+  if(error){ box.innerHTML='<div class="empty-state">Erro: '+esc(error.message)+'</div>'; return; }
+  if(!data||data.length===0){ box.innerHTML='<div class="empty-state">Nenhum processo finalizado ainda.</div>'; return; }
+  // buscar os registros de finalização para pegar motivo e quem finalizou
+  const ids=data.map(p=>p.id);
+  const {data:logs}=await db.from('registro').select('*').eq('acao','finalizar').in('processo_id',ids);
+  const logMap={};
+  (logs||[]).forEach(r=>{ if(!logMap[r.processo_id]) logMap[r.processo_id]=r; });
+  box.innerHTML=data.map(p=>{
+    const log=logMap[p.id];
+    const motivo=log?log.valor_novo:'—';
+    const motivoLabel = motivo==='concluido'?'✅ Concluído':'🚫 Desistiu';
+    const quem=log?log.usuario:'?';
+    let quando=''; try{ quando=log?new Date(log.criado_em).toLocaleString('pt-BR'):''; }catch(e){}
+    const ext = p.extrajudicial===true ? '<span class="tag ext">Extrajudicial</span>' : '';
+    const and = p.andamento ? `<div class="andline" style="margin-top:6px"><span class="lbl">Andamento:</span> ${esc(p.andamento)}</div>` : '';
+    const prov = p.providencias ? `<div class="prov"><span class="lbl">Providência:</span> ${esc(p.providencias)}</div>` : '';
+    const obs = p.observacao ? `<div class="prov"><span class="lbl">Obs.:</span> ${esc(p.observacao)}</div>` : '';
+    return `<div class="exc-item" style="padding:14px 16px">
+      <div class="exc-top">
+        <span class="exc-tipo">${esc(p.cliente||'(sem nome)')}</span>
+        <span style="font-size:12px;background:${motivo==='concluido'?'#E1F5EE':'#FDE8E8'};color:${motivo==='concluido'?'#085041':'#7A1A1A'};padding:2px 9px;border-radius:20px">${motivoLabel}</span>
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-top:3px">${esc(p.acao||'—')}</div>
+      <div class="meta" style="margin:6px 0">
+        <span class="num">${esc(p.numero||'—')}</span>${sysTag(p.sistema)}${ext}
+        <span class="date">${fmtDate(p.data)}</span>
+      </div>
+      ${and}${prov}${obs}
+      <div class="exc-who" style="margin-top:8px">Finalizado por ${esc(quem)} · ${esc(quando)}</div>
+      <div style="margin-top:10px">
+        <button onclick="restaurarProcesso(${p.id})" style="font-size:13px;padding:7px 14px;border-radius:8px;border:1px solid var(--copper);background:var(--copper-soft);color:var(--copper-dark);cursor:pointer">↩ Restaurar processo</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.restaurarProcesso = async function(id){
+  if(!confirm('Restaurar este processo? Ele volta a aparecer na lista ativa.')) return;
+  const {error}=await db.rpc('sp_restaurar_processo',{ p_id:id });
+  if(error){ toast('Erro ao restaurar: '+error.message); return; }
+  await logAction('restaurar', id, 'processo', 'finalizado', 'ativo');
+  toast('Processo restaurado!');
+  await openFinalizados();
+  await loadProcessos();
+};
+
+/* ===================== MINHA SENHA ===================== */
+$('#pin-btn').addEventListener('click', ()=>openPinChange(false));
+function openPinChange(forced){
+  const root=$('#modal-root');
+  root.innerHTML=`<div class="overlay" id="ov"><div class="modal">
+    <h3>${forced?'Defina sua senha':'Trocar minha senha'}</h3>
+    ${forced?'<p style="font-size:13px;color:var(--muted);margin-top:0">Por segurança, crie um PIN só seu, que ninguém mais conhece.</p>':''}
+    ${forced?'':'<div class="field"><label>PIN atual</label><input id="pc-atual" type="password" inputmode="numeric" maxlength="4" style="letter-spacing:6px"></div>'}
+    <div class="field"><label>Novo PIN (4 dígitos)</label><input id="pc-nova" type="password" inputmode="numeric" maxlength="4" style="letter-spacing:6px"></div>
+    <div class="field"><label>Repita o novo PIN</label><input id="pc-nova2" type="password" inputmode="numeric" maxlength="4" style="letter-spacing:6px"></div>
+    <div class="modal-actions">
+      ${forced?'':'<button class="btn-ghost" onclick="closeForm()">Cancelar</button>'}
+      <button class="btn-primary" id="pc-save">Salvar</button>
+    </div></div></div>`;
+  if(!forced){ $('#ov').addEventListener('click',e=>{ if(e.target.id==='ov') closeForm(); }); }
+  $('#pc-save').addEventListener('click', async ()=>{
+    const atual = forced ? '' : ($('#pc-atual').value||'');
+    const nova=$('#pc-nova').value, nova2=$('#pc-nova2').value;
+    if(!/^\d{4}$/.test(nova)){ toast('O PIN deve ter 4 números.'); return; }
+    if(nova!==nova2){ toast('Os PINs não conferem.'); return; }
+    const {error}=await db.rpc('sp_change_my_pin',{ p_atual:atual, p_nova:nova });
+    if(error){
+      const m=error.message||'';
+      if(m.includes('PIN_ATUAL_INCORRETO')) toast('PIN atual incorreto.');
+      else toast('Erro: '+m);
+      return;
+    }
+    closeForm(); toast('Senha atualizada.');
+    if(forced) enterApp();
+  });
+}
+
+function genReportDays(days){
+  const to=new Date(); const from=new Date(); from.setDate(from.getDate()-days+1);
+  genReportRange(isoDate(from), isoDate(to));
+}
+
+async function genReportRange(from, to){
+  const res=$('#rep-result');
+  if(!from || !to){ res.innerHTML='<div class="rep-empty">Escolha as duas datas e clique em Gerar.</div>'; return; }
+  res.innerHTML='<div class="empty-state">Gerando…</div>';
+  const {data,error}=await db.from('registro').select('*')
+    .gte('criado_em', from+'T00:00:00').lte('criado_em', to+'T23:59:59.999')
+    .order('criado_em',{ascending:false});
+  if(error){ res.innerHTML='<div class="rep-empty">Erro: '+error.message+'</div>'; return; }
+  const rows=data||[];
+  const novos=rows.filter(r=>r.acao==='incluir');
+  const ands=rows.filter(r=>r.acao==='editar' && r.campo==='andamento');
+  const provs=rows.filter(r=>r.acao==='editar' && r.campo==='providencias');
+  const mapa={}; processos.forEach(p=>mapa[p.id]=p);
+  const faltam=[...new Set([...ands,...provs].map(r=>r.processo_id).filter(id=>id && !mapa[id]))];
+  if(faltam.length){
+    const {data:extra}=await db.from('processos').select('id,cliente,numero').in('id',faltam);
+    (extra||[]).forEach(p=>mapa[p.id]=p);
+  }
+  const fmtDT=ts=>{ const d=new Date(ts); return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); };
+  const who=r=>{ const p=mapa[r.processo_id]; return p?esc(p.cliente):'Processo #'+(r.processo_id||'?'); };
+  let html=`<div class="rep-period">${fmtDate(from)} a ${fmtDate(to)}</div>
+   <div class="rep-cards">
+     <div class="mcard"><div class="ml">Novos processos</div><div class="mv">${novos.length}</div></div>
+     <div class="mcard"><div class="ml">Andamentos</div><div class="mv">${ands.length}</div></div>
+     <div class="mcard"><div class="ml">Providências</div><div class="mv">${provs.length}</div></div>
+   </div>`;
+  html+=`<div class="rep-sec">Novos processos no período</div>`;
+  html+= novos.length ? novos.map(r=>`<div class="rep-item"><div class="ri-top">${esc(r.valor_novo||'(processo)')}</div><div class="ri-by">cadastrado por ${esc(r.usuario)} · ${fmtDT(r.criado_em)}</div></div>`).join('')
+        : '<div class="rep-empty">Nenhum novo processo no período.</div>';
+  html+=`<div class="rep-sec">Andamentos no período</div>`;
+  html+= ands.length ? ands.map(r=>`<div class="rep-item"><div class="ri-top">${who(r)}</div><div class="ri-mid">${esc(r.valor_novo||'')}</div><div class="ri-by">por ${esc(r.usuario)} · ${fmtDT(r.criado_em)}</div></div>`).join('')
+        : '<div class="rep-empty">Nenhum andamento no período.</div>';
+  if(provs.length){
+    html+=`<div class="rep-sec">Providências no período</div>`;
+    html+= provs.map(r=>`<div class="rep-item"><div class="ri-top">${who(r)}</div><div class="ri-mid">${esc(r.valor_novo||'')}</div><div class="ri-by">por ${esc(r.usuario)} · ${fmtDT(r.criado_em)}</div></div>`).join('');
+  }
+  res.innerHTML=html;
+}
+
+/* ===================== FORM INCLUIR / EDITAR ===================== */
+async function nextExt(){
+  let max=0;
+  processos.forEach(p=>{ const m=/^EXT-(\d+)$/i.exec((p.numero||'').trim()); if(m) max=Math.max(max,parseInt(m[1],10)); });
+  return 'EXT-'+String(max+1).padStart(4,'0');
+}
+
+window.openForm = function(id){
+  if(id && !(currentUser.pode_editar||currentUser.papel==='master')){ toast('Você não tem permissão para editar.'); return; }
+  if(!id && !(currentUser.pode_incluir||currentUser.papel==='master')){ toast('Você não tem permissão para incluir.'); return; }
+  const p = id ? processos.find(x=>x.id===id) : null;
+  const root=$('#modal-root');
+  root.innerHTML = `
+  <div class="overlay" id="ov">
+    <div class="modal">
+      <h3>${p?'Editar processo':'Incluir processo'}</h3>
+      <div class="toggle-row">
+        <input type="checkbox" id="f-ext" ${p&&p.extrajudicial?'checked':''}>
+        <label for="f-ext" style="margin:0">É extrajudicial (sem processo na Justiça)</label>
+      </div>
+      <div class="field"><label>Cliente <span class="req">*</span></label><input id="f-cli" type="text" value="${p?esc(p.cliente):''}"></div>
+      <div class="field"><label>Ação</label><input id="f-acao" type="text" value="${p?esc(p.acao):''}"></div>
+      <div class="field" id="wrap-num">
+        <label>Número do processo</label>
+        <input id="f-num" type="text" inputmode="numeric" value="${p?esc(p.numero):''}" placeholder="0000000-00.0000.0.00.0000">
+        <div class="cnj-status" id="cnj-st"></div>
+      </div>
+      <div class="field"><label>Sistema</label>
+        <select id="f-sis">
+          <option value="">—</option>
+          <option ${p&&(p.sistema||'').toUpperCase()==='EPROC'?'selected':''}>EPROC</option>
+          <option ${p&&(p.sistema||'').toUpperCase()==='PJE'?'selected':''}>PJE</option>
+          <option ${p&&(p.sistema||'').toUpperCase()==='DCP'?'selected':''}>DCP</option>
+        </select>
+      </div>
+      <div class="field"><label>Data</label><input id="f-data" type="date" value="${p&&p.data?String(p.data).slice(0,10):''}"></div>
+      <div class="field"><label>Andamento</label><textarea id="f-and" rows="2">${p?esc(p.andamento):''}</textarea></div>
+      <div class="field"><label>Providência</label><textarea id="f-prov" rows="2">${p?esc(p.providencias):''}</textarea></div>
+      <div class="field"><label>Observação (recado interno)</label><textarea id="f-obs" rows="2" placeholder="Ex.: Maria, conferir documento com o cliente">${p?esc(p.observacao):''}</textarea></div>
+      <div class="field" style="background:#FDF6EC;border:1px solid var(--copper-soft);border-radius:10px;padding:12px;">
+        <label style="color:var(--copper-dark);font-weight:500">🔔 Alerta (prazo / audiência)</label>
+        <input id="f-alerta" type="text" value="${p?esc(p.alerta):''}" placeholder="Ex.: Audiência às 14h, comparecer à empresa X" style="margin-bottom:8px">
+        <label>Data do alerta</label>
+        <input id="f-dataalerta" type="date" value="${p&&p.data_alerta?String(p.data_alerta).slice(0,10):''}">
+        <div style="font-size:11px;color:var(--hint);margin-top:6px">O aviso aparece no app a partir de 3 dias antes, todo dia, até a data.</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-ghost" onclick="closeForm()">Cancelar</button>
+        <button class="btn-primary" id="f-save">${p?'Salvar':'Incluir'}</button>
+      </div>
+    </div>
+  </div>`;
+  const numInput=$('#f-num'), st=$('#cnj-st'), extChk=$('#f-ext');
+  function refreshNum(){
+    if(extChk.checked){ $('#wrap-num').style.display='none'; return; }
+    $('#wrap-num').style.display='block';
+    const v=numInput.value;
+    numInput.value=maskCNJ(v);
+    const r=validCNJ(numInput.value);
+    if(!numInput.value){ st.textContent=''; st.className='cnj-status'; }
+    else if(r.full && r.ok){ st.textContent='✓ número no padrão CNJ'; st.className='cnj-status ok'; }
+    else if(r.full && !r.ok){ st.textContent='⚠ dígitos verificadores não batem — confira'; st.className='cnj-status warn'; }
+    else { st.textContent='faltam dígitos ('+onlyDigits(numInput.value).length+' de 20)'; st.className='cnj-status warn'; }
+  }
+  numInput.addEventListener('input',refreshNum);
+  extChk.addEventListener('change',refreshNum);
+  refreshNum();
+  $('#ov').addEventListener('click',e=>{ if(e.target.id==='ov') closeForm(); });
+  $('#f-save').addEventListener('click',()=>saveForm(id));
+};
+window.closeForm = ()=>{ $('#modal-root').innerHTML=''; };
+
+async function saveForm(id){
+  const cli=$('#f-cli').value.trim();
+  if(!cli){ toast('Informe o cliente.'); return; }
+  const ext=$('#f-ext').checked;
+  let numero=$('#f-num').value.trim();
+  if(ext){
+    const p = id ? processos.find(x=>x.id===id):null;
+    numero = (p && /^EXT-\d+$/i.test((p.numero||''))) ? p.numero : await nextExt();
+  }
+  const obj={
+    cliente:cli, acao:$('#f-acao').value.trim(), numero,
+    sistema:$('#f-sis').value, data:$('#f-data').value||null,
+    andamento:$('#f-and').value.trim(), providencias:$('#f-prov').value.trim(),
+    observacao:$('#f-obs').value.trim()||null,
+    alerta:$('#f-alerta').value.trim()||null, data_alerta:$('#f-dataalerta').value||null,
+    extrajudicial:ext, excluido:false
+  };
+  $('#f-save').disabled=true;
+  if(id){
+    const old=processos.find(x=>x.id===id);
+    const {error}=await db.rpc('sp_atualizar_processo',{ p_id:id, p:obj });
+    if(error){
+      toast(error.message&&error.message.includes('SEM_PERMISSAO')?'Você não tem permissão para editar.':'Erro: '+error.message);
+      $('#f-save').disabled=false; return;
+    }
+    // registra mudanças campo a campo
+    for(const f of ['andamento','providencias','observacao','cliente','acao','numero','sistema','data','alerta','data_alerta']){
+      const a=(old[f]==null?'':String(old[f])), b=(obj[f]==null?'':String(obj[f]));
+      if(a!==b) await logAction('editar', id, f, a, b);
+    }
+    toast('Processo atualizado.');
+  }else{
+    const {data,error}=await db.rpc('sp_inserir_processo',{ p:obj });
+    if(error){
+      toast(error.message&&error.message.includes('SEM_PERMISSAO')?'Você não tem permissão para incluir.':'Erro: '+error.message);
+      $('#f-save').disabled=false; return;
+    }
+    await logAction('incluir', data, '', '', obj.cliente+' · '+obj.numero);
+    toast('Processo incluído.');
+  }
+  closeForm();
+  await loadProcessos();
+}
+
+window.askDelete = function(id){
+  const p=processos.find(x=>x.id===id);
+  const root=$('#modal-root');
+  root.innerHTML=`<div class="overlay" id="ov"><div class="modal">
+    <h3>Finalizar processo</h3>
+    <p style="font-size:14px;color:var(--muted);margin-top:0">
+      O processo de <b>${esc(p.cliente)}</b> vai sair da lista ativa.<br>
+      Qual o motivo?</p>
+    <div style="display:flex;gap:10px;margin-bottom:8px">
+      <label style="flex:1;border:1px solid var(--line);border-radius:10px;padding:14px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:14px" id="lbl-concluido">
+        <input type="radio" name="motivo" value="concluido" checked> ✅ Concluído
+      </label>
+      <label style="flex:1;border:1px solid var(--line);border-radius:10px;padding:14px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:14px" id="lbl-desistiu">
+        <input type="radio" name="motivo" value="desistiu"> 🚫 Desistiu
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeForm()">Cancelar</button>
+      <button class="btn-primary" style="background:var(--copper-dark)" id="del-ok">Finalizar</button>
+    </div></div></div>`;
+  // destaca o label selecionado
+  root.querySelectorAll('input[name="motivo"]').forEach(r=>{
+    r.addEventListener('change',()=>{
+      root.querySelectorAll('label[id^="lbl-"]').forEach(l=>l.style.borderColor='');
+      const sel=root.querySelector('input[name="motivo"]:checked');
+      if(sel) sel.closest('label').style.borderColor='var(--copper)';
+    });
+  });
+  root.querySelector('#lbl-concluido').style.borderColor='var(--copper)';
+  $('#ov').addEventListener('click',e=>{ if(e.target.id==='ov') closeForm(); });
+  $('#del-ok').addEventListener('click', async ()=>{
+    const motivo=root.querySelector('input[name="motivo"]:checked')?.value || 'concluido';
+    const {error}=await db.rpc('sp_finalizar_processo',{ p_id:id, p_motivo:motivo });
+    if(error){ toast(error.message&&error.message.includes('SEM_PERMISSAO')?'Você não tem permissão para excluir.':'Erro: '+error.message); return; }
+    await logAction('finalizar', id, 'motivo', p.cliente||'', motivo);
+    closeForm(); toast('Processo finalizado.'); await loadProcessos();
+  });
+};
+
+$('#add-btn').addEventListener('click',()=>openForm(null));
+
+/* ===================== START ===================== */
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
+(function(){
+  const e=$('#ver-auth'); if(e) e.textContent='Soares Pacheco · v'+APP_VERSION;
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent||'');
+  const standalone=window.matchMedia('(display-mode: standalone)').matches || navigator.standalone===true;
+  if(isIOS && !standalone){ const h=$('#ios-hint'); if(h) h.classList.remove('hidden'); }
+})();
+boot();
+</script>
+</body>
+</html>
